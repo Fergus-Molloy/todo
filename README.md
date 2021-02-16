@@ -33,6 +33,6 @@ Uses an sqlite db located at `~/.todo.db` hopefully
 
 # Todo
 
-- [ ] Automatically create database if it doesn't exist
+- [x] Automatically create database if it doesn't exist
 - [ ] clean up code in database.rs (pls don't look it's terrifying)
 - [ ] deal with all the different possible unexpected outcomes (silly users typing things in wrong)

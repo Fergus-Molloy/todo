@@ -4,12 +4,51 @@ use rusqlite::{Connection, Result};
 use std::io;
 use std::path::PathBuf;
 
-fn db_get() -> PathBuf {
+pub fn db_get() -> PathBuf {
     let mut todo = dirs::home_dir().unwrap();
     todo.push(".todo.db");
     if !todo.exists() {
+        println!("creating new db at {:?}", todo);
         // create db
         std::fs::File::create(&todo).unwrap();
+        let create_lists = r"
+        CREATE TABLE 'lists' (
+	'id'	INTEGER NOT NULL UNIQUE,
+	'name'	TEXT NOT NULL UNIQUE,
+	'current'	INTEGER,
+	'MaxNum'	INTEGER,
+	PRIMARY KEY('id' AUTOINCREMENT))";
+        let create_tasks = r"
+        CREATE TABLE 'tasks' (
+	'id'	INTEGER NOT NULL UNIQUE,
+	'num'	INTEGER NOT NULL,
+	'complete'	INTEGER NOT NULL,
+	'priority'	INTEGER NOT NULL,
+	'data'	TEXT,
+	PRIMARY KEY('id' AUTOINCREMENT));";
+        let create_tasks_to_list = r"
+        CREATE TABLE 'task_to_list' (
+	'id'	INTEGER NOT NULL UNIQUE,
+	'task'	INTEGER NOT NULL UNIQUE,
+	'list'	INTEGER NOT NULL,
+	FOREIGN KEY('task') REFERENCES 'tasks'('id') ON DELETE CASCADE,
+	FOREIGN KEY('list') REFERENCES 'lists'('id') ON DELETE CASCADE,
+	PRIMARY KEY('id' AUTOINCREMENT));";
+        let mut path = dirs::home_dir().unwrap();
+        path.push(".todo.db");
+        let con = Connection::open(path);
+        let con = match con {
+            Ok(v) => v,
+            Err(e) => panic!("this isn't going to be fun, {}", e),
+        };
+        con.execute(create_lists, NO_PARAMS).unwrap();
+        con.execute(create_tasks, NO_PARAMS).unwrap();
+        con.execute(create_tasks_to_list, NO_PARAMS).unwrap();
+        con.execute(
+            "INSERT INTO lists (name, current, MaxNum) VALUES('General', 1, 0)",
+            NO_PARAMS,
+        )
+        .unwrap();
     }
     assert!(todo.exists() && todo.is_file());
     todo
