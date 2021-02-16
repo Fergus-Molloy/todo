@@ -2,7 +2,7 @@
 A todo list tracker written in rust with support for multiple lists
 
 # Usage
-```bash
+```
 $ todo
 todo 0.1.0
 simple command-line todo list
