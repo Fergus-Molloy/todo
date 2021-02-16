@@ -22,7 +22,7 @@ SUBCOMMANDS:
     edit        Edit the description of a task
     help        Prints this message or the help of the given subcommand(s)
     list        List your current tasks
-    remove
+    remove      remove a task with the given num (can remove lists by name in list mode)
     swap        Swap the nums (can swap the order depending on print order)
     switch      Make the given list the active list
     update      Remove a single item or list Update nums so there are no gaps (may arbitrarily change the order)
