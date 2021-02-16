@@ -28,6 +28,8 @@ pub enum Opt {
     List {
         /// The name of the task list to list tasks from (defaults to active list if not given)
         list: Option<String>,
+        #[structopt(short, long)]
+        order: Option<String>,
     },
     /// Remove a single item or list
     Remove {
@@ -38,12 +40,33 @@ pub enum Opt {
         /// name of list or num of task
         value: String,
     },
-    /// Update nums so they're all in order :)
-    Update,
+    /// Update nums so there are no gaps (may arbitrarily change the order)
+    Update {
+        /// list to update
+        list: Option<String>,
+    },
     /// Edit the description of a task
-    Edit,
+    Edit {
+        #[structopt(short, long)]
+        /// The list containing the task to be altered (defaults to active list if not given)
+        list: Option<String>,
+
+        /// Number of the task you're updating
+        num: i32,
+        #[structopt(name = "DESC", parse(from_str))]
+        /// The description to change to
+        data: Vec<String>,
+    },
     /// Swap the nums (can swap the order depending on print order)
-    Swap,
+    Swap {
+        /// Swap nums on this list
+        #[structopt(short, long)]
+        list: Option<String>,
+        num_one: i32,
+        num_two: i32,
+    },
+    /// Make the given list the active list
+    Switch { list: String },
     /// Get the name of the current list
     Current,
 }

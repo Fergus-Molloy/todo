@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate rusqlite;
+use std::cmp::Ord;
 use structopt::StructOpt;
 mod database;
 use database::*;
@@ -7,18 +8,40 @@ mod opt;
 use opt::Opt;
 mod task;
 fn main() {
+    let lists = database::get_all_lists();
+    for item in lists.iter() {
+        println!("list: {:?}", item);
+    }
     let opt = Opt::from_args();
     println!("{:?}", opt);
     match opt {
-        Opt::List { list } => {
-            let tasks = match list {
+        Opt::List { list, order } => {
+            let mut tasks = match list {
                 Some(list) => get_tasks(list),
                 None => get_current_tasks(),
             };
+            let order = order.unwrap_or("priority".to_string());
+            match &order[..] {
+                "num" => tasks.sort_by(|task, other| task.num.cmp(&other.num)),
+                _ => tasks.sort_by(|task, other| {
+                    other
+                        .priority
+                        .partial_cmp(&task.priority)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                }),
+            }
             for task in tasks {
                 println!("{}", task);
             }
         }
+        Opt::Swap {
+            list,
+            num_one,
+            num_two,
+        } => match list {
+            Some(name) => swap(num_one, num_two, name),
+            None => swap_current(num_one, num_two),
+        },
         Opt::Clean { list } => {
             let count = match list {
                 Some(list) => clean(list),
@@ -36,10 +59,7 @@ fn main() {
             list,
             data,
         } => {
-            let mut task = String::new();
-            for word in data {
-                task.push_str(&format!("{} ", word)[..]);
-            }
+            let task = string_from_vec(data);
             match list {
                 Some(list) => new_task(task, priority.unwrap_or(0), list),
                 None => new_task_current(task, priority.unwrap_or(0)),
@@ -55,6 +75,28 @@ fn main() {
                 }
             }
         }
+        Opt::Edit { list, num, data } => {
+            let string = string_from_vec(data);
+            match list {
+                Some(list) => update_desc_list(num, string, list),
+                None => update_desc(num, string),
+            }
+        }
+        Opt::Switch { list } => switch_list(list),
+        Opt::Update { list } => {
+            match list {
+                Some(name) => update_nums(name).unwrap(),
+                None => update_current_nums().unwrap(),
+            };
+        }
         _ => todo!(),
     }
+}
+
+fn string_from_vec(vec: Vec<String>) -> String {
+    let mut string = String::new();
+    for word in vec {
+        string.push_str(&format!("{} ", word)[..]);
+    }
+    string
 }

@@ -61,6 +61,27 @@ pub fn get_tasks(list: String) -> Vec<Task> {
     tasks
 }
 
+pub fn get_all_lists() -> Result<Vec<(i32, String)>> {
+    let sql = "SELECT id, name FROM lists";
+    let con = connect().unwrap();
+    let mut stmt = con.prepare(sql).unwrap();
+    let iter = stmt
+        .query_map(NO_PARAMS, |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            Ok((id, name))
+        })
+        .unwrap();
+    let mut lists = Vec::new();
+    for item in iter {
+        match item {
+            Ok(val) => lists.push(val),
+            Err(e) => panic!("could not get all lists {}", e),
+        }
+    }
+    Ok(lists)
+}
+
 pub fn new_task_current<S: Into<String>, P: Into<i32>>(data: S, priority: P) {
     let con = connect().unwrap();
     let get = r"
@@ -186,10 +207,77 @@ pub fn complete(num: i32) {
     }
 }
 
-fn update_nums() {
-    // update nums of all items so there are no gaps and high priority tasks have ids < lower
-    // priority tasks
-    todo!()
+fn update_all_nums() {
+    let sql = r"
+    select tt.id,tt.num from tasks as tt
+    INNER JOIN task_to_list ON tt.id== task_to_list.task
+    INNER JOIN lists ON lists.id==task_to_list.list
+    WHERE lists.id == ?;
+    ";
+    let lists = get_all_lists().unwrap();
+    let con = connect().unwrap();
+    let mut stmt = con.prepare(sql).unwrap();
+    for id in lists.iter() {}
+}
+
+pub fn update_current_nums() -> Result<usize> {
+    let (_, list) = get_current_list();
+    update_nums(list)
+}
+
+pub fn update_nums(list: String) -> Result<usize> {
+    let sql = r"
+    SELECT t.id, t.priority, t.num FROM tasks AS t
+    INNER JOIN task_to_list ON t.id==task_to_list.task
+    INNER JOIN lists ON task_to_list.list=lists.id
+    WHERE lists.name==?";
+    let update = "UPDATE tasks SET num=? WHERE id==?";
+    let con = connect().unwrap();
+    let mut stmt = con.prepare(sql).unwrap();
+    let iter = stmt
+        .query_map(params![list], |row| {
+            let id: i32 = row.get(0)?;
+            let p: i32 = row.get(1)?;
+            let num: i32 = row.get(2)?;
+            println!("found task with id: {}", id);
+            Ok((id, p, num))
+        })
+        .unwrap();
+    let mut tasks = Vec::new();
+    for row in iter {
+        match row {
+            Ok(v) => tasks.push(v),
+            Err(e) => panic!("Something went wrong: {}", e),
+        }
+    }
+    tasks.sort_by(|task, other| other.1.cmp(&task.1));
+    let mut count = -1;
+    for task in tasks.iter() {
+        count += 1;
+        match con.execute(update, params![count, task.0]) {
+            Ok(_) => println!("updating task with id {}", task.0),
+            Err(e) => panic!("could not update task with id: {}\nerror: {}", task.0, e),
+        }
+    }
+    Ok(tasks.len())
+}
+
+pub fn update_desc(num: i32, data: String) {
+    let (_, list) = get_current_list();
+    update_desc_list(num, data, list)
+}
+pub fn update_desc_list(num: i32, data: String, list: String) {
+    let sql = r"
+    UPDATE tasks AS t SET data=:data WHERE t.id IN (SELECT tt.id FROM tasks AS tt
+    INNER JOIN task_to_list ON tt.id== task_to_list.task
+    INNER JOIN lists ON lists.id==task_to_list.list
+    WHERE lists.name==:list AND tt.num==:num);";
+    let con = connect().unwrap();
+    con.execute_named(
+        sql,
+        named_params! {":list": list, ":data": data, ":num": num},
+    )
+    .unwrap();
 }
 
 pub fn clean_current() -> Result<usize> {
@@ -212,12 +300,17 @@ pub fn clean(list: String) -> Result<usize> {
 }
 
 pub fn switch_list(name: String) {
-    let con = connect().unwrap();
-    let update = r"UPDATE lists SET current=0 where current=1";
-    let _ = con.execute(update, NO_PARAMS).unwrap();
-    let set = r"UPDATE lists SET current=1 WHERE name==?";
-    con.execute(set, params![name]).unwrap();
-    println!("Set current list to {}", name);
+    match get_list(name) {
+        Ok(list) => {
+            let con = connect().unwrap();
+            let update = r"UPDATE lists SET current=0 where current=1";
+            let _ = con.execute(update, NO_PARAMS).unwrap();
+            let set = r"UPDATE lists SET current=1 WHERE name==?";
+            con.execute(set, params![list]).unwrap();
+            println!("Set current list to {}", list);
+        }
+        Err(_) => eprintln!("list does not exist"),
+    }
 }
 
 pub fn get_current_list() -> (i32, String) {
@@ -230,4 +323,26 @@ pub fn get_current_list() -> (i32, String) {
         Ok((id, name))
     });
     res.unwrap()
+}
+
+pub fn swap_current(num_one: i32, num_two: i32) {
+    let (_, list) = get_current_list();
+    swap(num_one, num_two, list)
+}
+pub fn swap(num_one: i32, num_two: i32, list: String) {
+    let sql = r"
+    SELECT t.id from tasks as t
+    inner join task_to_list on t.id==task_to_list.task
+    inner join lists on task_to_list.list=lists.id
+    where lists.name==? and t.num=?";
+    let con = connect().unwrap();
+    let id1: i32 = con
+        .query_row(sql, params![list, num_one], |row| Ok(row.get(0)?))
+        .unwrap();
+    let id2: i32 = con
+        .query_row(sql, params![list, num_two], |row| Ok(row.get(0)?))
+        .unwrap();
+    let update = "UPDATE tasks SET num=? WHERE id==?";
+    let _ = con.execute(update, params![num_two, id1]).unwrap();
+    let _ = con.execute(update, params![num_one, id2]).unwrap();
 }
