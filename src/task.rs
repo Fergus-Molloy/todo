@@ -34,12 +34,11 @@ pub struct Task {
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let out: String;
-        if self.complete {
-            out = format!("{} {:03}: {}", BOX_CHECKED, self.num, self.data);
+        let out = if self.complete {
+            format!("{} {:03}: {}", BOX_CHECKED, self.num, self.data)
         } else {
-            out = format!("{} {:03}: {}", BOX_UNCHECKED, self.num, self.data);
-        }
+            format!("{} {:03}: {}", BOX_UNCHECKED, self.num, self.data)
+        };
         match self.priority {
             Priority::LOW => write!(f, "{}", out.cyan()),
             Priority::MED => write!(f, "{}", out.yellow()),
