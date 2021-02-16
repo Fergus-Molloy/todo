@@ -1,10 +1,12 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 use colored::Colorize;
 use std::fmt;
 
 const BOX_CHECKED: char = '☑';
 const BOX_UNCHECKED: char = '☐';
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Priority {
     LOW,
     MED,
