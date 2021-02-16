@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
 use colored::Colorize;
 use std::fmt;
 

@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::task::{Priority, Task};
 use rusqlite::NO_PARAMS;
 use rusqlite::{Connection, Result};
@@ -60,7 +59,7 @@ pub fn get_tasks(list: String) -> Vec<Task> {
     }
     tasks
 }
-
+/*
 pub fn get_all_lists() -> Result<Vec<(i32, String)>> {
     let sql = "SELECT id, name FROM lists";
     let con = connect().unwrap();
@@ -80,7 +79,7 @@ pub fn get_all_lists() -> Result<Vec<(i32, String)>> {
         }
     }
     Ok(lists)
-}
+}*/
 
 pub fn new_task_current<S: Into<String>, P: Into<i32>>(data: S, priority: P) {
     let con = connect().unwrap();
@@ -114,8 +113,7 @@ pub fn remove_list(name: String) {
     WHERE lists.name==:name);
     DELETE from lists where lists.name==:name
     ";
-    let res = con
-        .execute_named(sql, named_params! {":name": name})
+    con.execute_named(sql, named_params! {":name": name})
         .unwrap();
     println!("Removed {}", name);
 }
@@ -205,19 +203,6 @@ pub fn complete(num: i32) {
         Ok(_) => println!("Completed {:03}", num),
         Err(e) => panic!("could not update {}:\n{}", num, e),
     }
-}
-
-fn update_all_nums() {
-    let sql = r"
-    select tt.id,tt.num from tasks as tt
-    INNER JOIN task_to_list ON tt.id== task_to_list.task
-    INNER JOIN lists ON lists.id==task_to_list.list
-    WHERE lists.id == ?;
-    ";
-    let lists = get_all_lists().unwrap();
-    let con = connect().unwrap();
-    let mut stmt = con.prepare(sql).unwrap();
-    for id in lists.iter() {}
 }
 
 pub fn update_current_nums() -> Result<usize> {

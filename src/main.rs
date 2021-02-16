@@ -8,13 +8,31 @@ mod opt;
 use opt::Opt;
 mod task;
 fn main() {
-    let lists = database::get_all_lists();
-    for item in lists.iter() {
-        println!("list: {:?}", item);
-    }
     let opt = Opt::from_args();
-    println!("{:?}", opt);
     match opt {
+        Opt::Add {
+            priority,
+            list,
+            data,
+        } => {
+            let task = string_from_vec(data);
+            match list {
+                Some(list) => new_task(task, priority.unwrap_or(0), list),
+                None => new_task_current(task, priority.unwrap_or(0)),
+            }
+        }
+        Opt::Clean { list } => {
+            let count = match list {
+                Some(list) => clean(list),
+                None => clean_current(),
+            };
+            println!("Removed {} items", count.unwrap());
+        }
+        Opt::Complete { num } => complete(num),
+        Opt::Current => {
+            let (_, name) = get_current_list();
+            println!("Current list is : {}", name);
+        }
         Opt::List { list, order } => {
             let mut tasks = match list {
                 Some(list) => get_tasks(list),
@@ -34,35 +52,11 @@ fn main() {
                 println!("{}", task);
             }
         }
-        Opt::Swap {
-            list,
-            num_one,
-            num_two,
-        } => match list {
-            Some(name) => swap(num_one, num_two, name),
-            None => swap_current(num_one, num_two),
-        },
-        Opt::Clean { list } => {
-            let count = match list {
-                Some(list) => clean(list),
-                None => clean_current(),
-            };
-            println!("Removed {} items", count.unwrap());
-        }
-        Opt::Current => {
-            let (_, name) = get_current_list();
-            println!("Current list is : {}", name);
-        }
-        Opt::Complete { num } => complete(num),
-        Opt::Add {
-            priority,
-            list,
-            data,
-        } => {
-            let task = string_from_vec(data);
+        Opt::Edit { list, num, data } => {
+            let string = string_from_vec(data);
             match list {
-                Some(list) => new_task(task, priority.unwrap_or(0), list),
-                None => new_task_current(task, priority.unwrap_or(0)),
+                Some(list) => update_desc_list(num, string, list),
+                None => update_desc(num, string),
             }
         }
         Opt::Remove { list_mode, value } => {
@@ -75,13 +69,14 @@ fn main() {
                 }
             }
         }
-        Opt::Edit { list, num, data } => {
-            let string = string_from_vec(data);
-            match list {
-                Some(list) => update_desc_list(num, string, list),
-                None => update_desc(num, string),
-            }
-        }
+        Opt::Swap {
+            list,
+            num_one,
+            num_two,
+        } => match list {
+            Some(name) => swap(num_one, num_two, name),
+            None => swap_current(num_one, num_two),
+        },
         Opt::Switch { list } => switch_list(list),
         Opt::Update { list } => {
             match list {
@@ -89,7 +84,6 @@ fn main() {
                 None => update_current_nums().unwrap(),
             };
         }
-        _ => todo!(),
     }
 }
 
