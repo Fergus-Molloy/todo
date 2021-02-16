@@ -45,6 +45,7 @@ pub enum Opt {
         #[structopt(short, long)]
         order: Option<String>,
     },
+    /// remove a task with the given num (can remove lists by name in list mode)
     Remove {
         #[structopt(short, long)]
         /// Remove a list instead
