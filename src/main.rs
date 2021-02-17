@@ -18,31 +18,23 @@ fn main() {
             priority,
             list,
             data,
-        } => {
-            let task = data.join(" ");
-            match list {
-                Some(list) => new_task(task, priority.unwrap_or(0), list),
-                None => new_task_current(task, priority.unwrap_or(0)),
-            }
-        }
+        } => new_task(data.join(" "), priority.unwrap_or(0), list),
         Opt::Clean { list } => {
-            let count = match list {
-                Some(list) => clean(list),
-                None => clean_current(),
-            };
+            let count = clean(list);
             println!("Removed {} items", count.unwrap());
         }
-        Opt::Complete { num } => complete(num),
+        Opt::Complete { num } => match complete(num) {
+            Ok(_) => println!("Completed {:03}", num),
+            Err(e) => panic!("could not update {}:\n{}", num, e),
+        },
         Opt::Current => {
-            let (_, name) = get_current_list();
-            println!("Current list is : {}", name);
+            // change this to lists and list to tasks??
+            println!("Current list is : {}", get_current_list_name())
         }
         Opt::List { list, order } => {
-            let mut tasks = match list {
-                Some(list) => get_tasks(list),
-                None => get_current_tasks(),
-            };
+            let mut tasks = get_tasks(list); // get tasks
             match order.as_deref() {
+                // order tasks
                 Some("num") => tasks.sort_by(|task, other| task.num.cmp(&other.num)),
                 _ => tasks.sort_by(|task, other| {
                     other
@@ -51,17 +43,15 @@ fn main() {
                         .unwrap_or(std::cmp::Ordering::Equal)
                 }),
             }
+            // print tasks
             for task in tasks {
                 println!("{}", task);
             }
         }
-        Opt::Edit { list, num, data } => {
-            let string = data.join(" ");
-            match list {
-                Some(list) => update_desc_list(num, string, list),
-                None => update_desc(num, string),
-            }
-        }
+        Opt::Edit { list, num, data } => match update_desc(num, data.join(" "), list) {
+            Ok(_) => println!("Sucessfully updated description of task {:03}", num),
+            Err(e) => eprintln!("Could not update {}\nReason: {}", num, e),
+        },
         Opt::Remove { list_mode, value } => {
             if list_mode {
                 remove_list(value);
@@ -76,16 +66,11 @@ fn main() {
             list,
             num_one,
             num_two,
-        } => match list {
-            Some(name) => swap(num_one, num_two, name),
-            None => swap_current(num_one, num_two),
+        } => swap(num_one, num_two, list),
+        Opt::Switch { list } => match switch_list(&list) {
+            Ok(_) => println!("Set current list to {}", list),
+            Err(e) => eprintln!("Could not update!\nReason: {}", e),
         },
-        Opt::Switch { list } => switch_list(list),
-        Opt::Update { list } => {
-            match list {
-                Some(name) => update_nums(name).unwrap(),
-                None => update_current_nums().unwrap(),
-            };
-        }
+        Opt::Update { list } => println!("Updated {} items", update_nums(list).unwrap()),
     }
 }
