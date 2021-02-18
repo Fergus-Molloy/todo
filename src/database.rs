@@ -1,6 +1,7 @@
 use crate::task::{Priority, Task};
 use rusqlite::NO_PARAMS;
 use rusqlite::{Connection, Result};
+use std::fmt::Display;
 use std::io;
 use std::path::PathBuf;
 
@@ -79,13 +80,23 @@ pub fn clean(list: Option<String>) -> Result<usize> {
 
 // needs redoing now multiple tasks can have the same num
 // Delete
-pub fn remove_task(num: i32) {
+pub fn remove_task(num: i32, list: Option<String>) {
+    let list = list.unwrap_or(get_current_list_name());
     let con = connect().unwrap();
-    let rm = r"
-    DELETE FROM tasks WHERE tasks.num==?
+    let sql = r"
+    DELETE from tasks as t where t.id IN (select tt.id from tasks as tt
+    INNER JOIN task_to_list ON tt.id== task_to_list.task
+    INNER JOIN lists ON lists.id==task_to_list.list
+    WHERE lists.name==? AND tt.num==?);
     ";
-    let mut stmt = con.prepare(rm).unwrap();
-    stmt.execute(params![num]).unwrap();
+    let mut stmt = con.prepare(sql).unwrap();
+    stmt.execute(params![list, num]).unwrap();
+    let sql = r"
+    UPDATE lists SET MaxNum=(
+    SELECT MaxNum FROM lists WHERE name=:name)-1 WHERE name=:name
+    ";
+    let mut stmt = con.prepare(sql).unwrap();
+    stmt.execute_named(named_params! {":name": list}).unwrap();
     println!("Removed task {}", num);
 }
 
@@ -96,11 +107,12 @@ pub fn remove_list(name: String) {
     DELETE from tasks as t where t.id IN (select tt.id from tasks as tt
     INNER JOIN task_to_list ON tt.id== task_to_list.task
     INNER JOIN lists ON lists.id==task_to_list.list
-    WHERE lists.name==:name);
-    DELETE from lists where lists.name==:name
+    WHERE lists.name==?)";
+    con.execute(sql, params![name]).unwrap();
+    let sql = r"
+    DELETE from lists where lists.name==?
     ";
-    con.execute_named(sql, named_params! {":name": name})
-        .unwrap();
+    con.execute(sql, params![name]).unwrap();
     println!("Removed {}", name);
 }
 
@@ -216,36 +228,40 @@ pub fn new_task(data: String, priority: i32, list: Option<String>) {
 }
 
 // insert
-fn create_list(name: String) -> i32 {
-    let accept: [&str; 4] = ["y", "yes", "yeah", "yy"];
-    println!("List {} not recoginsed create new list? (y/n)", name);
+pub fn create_list(name: &String) -> Result<usize> {
+    let con = connect().unwrap();
+    let create = r"
+    INSERT INTO lists (name, current, MaxNum) values(?, 0, 0);
+    ";
+    let mut stmt = con.prepare(create).unwrap();
+    stmt.execute(params![name])
+}
+
+fn user_agreement<S: Display>(phrase: S) -> bool {
+    let accept_phrases: [&str; 4] = ["y", "yes", "yeah", "yy"];
+    println!("{}", phrase);
     let mut inp = String::new();
     io::stdin()
         .read_line(&mut inp)
         .expect("could not read input");
-
-    if accept.iter().any(|&x| x == inp) {
-        // create new list
-        let con = connect().unwrap();
-        let create = r"
-        INSERT INTO lists (name, current) values(?, 0);
-        ";
-        let mut stmt = con.prepare(create).unwrap();
-        stmt.execute(params![name]).unwrap();
-        get_list_id(&name).unwrap()
-    } else {
-        // user rejected cancelling opertaion
-        panic!("cannot create list, reason: user cancelled");
-    }
+    accept_phrases.iter().any(|&x| x == inp)
 }
 
 // insert
-pub fn new_list(name: &String) -> i32 {
-    let exists = get_list_id(name);
-    if exists.is_ok() {
-        exists.unwrap()
-    } else {
-        create_list(name.into())
+fn new_list(name: &String) -> i32 {
+    match get_list_id(name) {
+        Ok(id) => id, //list already exists
+        Err(_) => {
+            if user_agreement(format!(
+                "List {} not recoginsed create new list? (y/n)",
+                name
+            )) {
+                create_list(name.into())
+            } else {
+                eprintln!("User rejection, exiting");
+                std::process::exit(1);
+            }
+        }
     }
 }
 

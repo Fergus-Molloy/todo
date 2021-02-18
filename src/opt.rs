@@ -4,6 +4,8 @@ use structopt::StructOpt;
 pub enum Opt {
     /// Add a new task to your todo list
     Add {
+        #[structopt(subcommand)]
+        cmd: Option<Cmd>,
         #[structopt(short, long)]
         /// The priority of the given tasks (defaults to LOW)
         priority: Option<i32>,
@@ -47,12 +49,11 @@ pub enum Opt {
     },
     /// remove a task with the given num (can remove lists by name in list mode)
     Remove {
-        #[structopt(short, long)]
-        /// Remove a list instead
-        list_mode: bool,
+        #[structopt(subcommand)]
+        list: Option<Cmd>,
         #[structopt(name = "VALUE")]
         /// name of list or num of task
-        value: String,
+        value: Option<i32>,
     },
     /// Swap the nums (can swap the order depending on print order)
     Swap {
@@ -71,4 +72,9 @@ pub enum Opt {
         /// list to update
         list: Option<String>,
     },
+}
+
+#[derive(StructOpt, Debug)]
+pub enum Cmd {
+    List { list_name: String },
 }
