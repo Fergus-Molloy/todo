@@ -3,6 +3,7 @@ pub mod clean;
 pub mod complete;
 pub mod database;
 pub mod edit;
+pub mod lists;
 pub mod remove;
 pub mod swap;
 pub mod switch;

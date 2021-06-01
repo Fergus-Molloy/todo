@@ -12,7 +12,6 @@ use opt::Opt;
 
 fn main() {
     let opt = Opt::from_args();
-    println!("{:?}", opt);
     match opt {
         Opt::Add {
             cmd,
@@ -49,11 +48,19 @@ fn main() {
             Err(e) => panic!("could not update {}:\n{}", num, e),
         },
         Opt::Lists => {
-            // change this to lists and list to tasks??
-            println!(
-                "Current list is : {}",
-                database::database::get_current_list_name()
-            )
+            println!("Lists:");
+            match database::lists::get_all_list_names() {
+                Err(e) => eprintln!("Could not get lists: {}", e),
+                Ok(list) => {
+                    let lines: Vec<String> = list
+                        .iter()
+                        .map(|item| format!("{}{}", if item.1 { "* " } else { "" }, item.0))
+                        .collect();
+                    for line in lines {
+                        println!("{}", line);
+                    }
+                }
+            }
         }
         Opt::Tasks { list, order } => {
             let mut tasks = database::tasks::get_tasks(list); // get tasks

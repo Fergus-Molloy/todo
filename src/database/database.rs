@@ -1,5 +1,4 @@
-use rusqlite::NO_PARAMS;
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection, Result, NO_PARAMS};
 use std::fmt::Display;
 use std::io;
 use std::path::PathBuf;
@@ -59,27 +58,6 @@ pub fn db_get() -> PathBuf {
 pub fn connect() -> Result<Connection> {
     let todo = db_get();
     Connection::open(todo)
-}
-
-// fetch
-pub fn get_all_list_names() -> Result<Vec<String>> {
-    let sql = "SELECT name FROM lists";
-    let con = connect().unwrap();
-    let mut stmt = con.prepare(sql).unwrap();
-    let iter = stmt
-        .query_map(NO_PARAMS, |row| {
-            let name: String = row.get(0)?;
-            Ok(name)
-        })
-        .unwrap();
-    let mut lists = Vec::new();
-    for item in iter {
-        match item {
-            Ok(val) => lists.push(val),
-            Err(e) => panic!("could not get all lists {}", e),
-        }
-    }
-    Ok(lists)
 }
 
 // fetch
