@@ -25,9 +25,10 @@ pub enum Opt {
     Complete {
         /// The number of the task that has been completed
         num: i32,
+        list: Option<String>,
     },
     /// Get the name of the current list
-    Current,
+    Lists,
     /// Edit the description of a task
     Edit {
         #[structopt(short, long)]
@@ -41,7 +42,7 @@ pub enum Opt {
         data: Vec<String>,
     },
     /// List your current tasks
-    List {
+    Tasks {
         /// The name of the task list to list tasks from (defaults to active list if not given)
         list: Option<String>,
         #[structopt(short, long)]
