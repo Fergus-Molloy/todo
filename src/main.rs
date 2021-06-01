@@ -63,7 +63,7 @@ fn main() {
             }
         }
         Opt::Tasks { list, order } => {
-            let mut tasks = database::tasks::get_tasks(list); // get tasks
+            let mut tasks = database::tasks::get_tasks(list.clone()); // get tasks
             match order.as_deref() {
                 // order tasks
                 Some("num") => tasks.sort_by(|task, other| task.num.cmp(&other.num)),
@@ -75,8 +75,16 @@ fn main() {
                 }),
             }
             // print tasks
-            for task in tasks {
-                println!("{}", task);
+            println!(
+                "{}:",
+                list.unwrap_or(database::database::get_current_list_name())
+            );
+            if tasks.len() > 1 {
+                for task in tasks {
+                    println!("{}", task);
+                }
+            } else {
+                println!("No tasks here");
             }
         }
         Opt::Edit { list, num, data } => {

@@ -94,7 +94,7 @@ pub fn user_agreement<S: Display>(phrase: S) -> bool {
 }
 
 // update
-pub fn update_nums(list: Option<String>) -> Result<usize> {
+pub fn _update_nums(list: Option<String>) -> Result<usize> {
     let list = list.unwrap_or(get_current_list_name());
     let sql = r"
     SELECT t.id, t.priority, t.num FROM tasks AS t
