@@ -2,8 +2,9 @@ use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 pub enum Opt {
-    /// Add a new task to your todo list
+    /// Add a new task or list to your todo list
     Add {
+        /// The subcommand of what you want to add can be `task` or `list`
         #[structopt(subcommand)]
         cmd: Cmd,
     },
@@ -16,16 +17,16 @@ pub enum Opt {
     Complete {
         /// The number of the task that has been completed
         num: i32,
+        /// List containing the task you want to complete (defaults to active if not given)
         list: Option<String>,
     },
-    /// Get the name of the current list
+    /// Get the names of all lists (current is marked with *)
     Lists,
     /// Edit the description of a task
     Edit {
         #[structopt(short, long)]
         /// The list containing the task to be altered (defaults to active list if not given)
         list: Option<String>,
-
         /// Number of the task you're updating
         num: i32,
         #[structopt(name = "DESC", parse(from_str))]
@@ -37,46 +38,46 @@ pub enum Opt {
         /// The name of the task list to list tasks from (defaults to active list if not given)
         list: Option<String>,
         #[structopt(short, long)]
+        /// Ordering of the tasks `num` for numerical order or blank for priority ordering
         order: Option<String>,
     },
-    /// remove a task with the given num (can remove lists by name in list mode)
+    /// remove a task or list
     Remove {
+        /// Subcommand to choose what to remove can be `task` or `list`
         #[structopt(subcommand)]
-        list: Option<Cmd>,
-        #[structopt(name = "VALUE")]
-        /// name of list or num of task
-        value: Option<i32>,
+        cmd: RCmd,
     },
     /// Swap the nums (can swap the order depending on print order)
     Swap {
-        /// Swap nums on this list
+        /// Swap nums on this list (defaults to active list if not given)
         #[structopt(short, long)]
         list: Option<String>,
         num_one: i32,
         num_two: i32,
     },
     /// Make the given list the active list
-    Switch {
-        list: String,
-    },
-    /// Remove a single item or list
+    Switch { list: String },
     /// Update nums so there are no gaps
     /// (may arbitrarily change the order)
     Update {
         /// list to update
         list: Option<String>,
     },
+    /// Test command please ignore
     Test,
 }
 
 #[derive(StructOpt, Debug)]
 pub enum Cmd {
+    /// List subcommand
     List {
+        /// Name of the list
         list_name: String,
     },
+    /// Task subcommand
     Task {
         #[structopt(short, long)]
-        /// The priority of the given tasks (defaults to LOW)
+        /// The priority of the given task (defaults to LOW)
         priority: Option<i32>,
         #[structopt(short, long)]
         /// The list to add the task to (defaults to active list if not given)
@@ -84,5 +85,21 @@ pub enum Cmd {
         #[structopt(name = "TASK", parse(from_str))]
         // The task to add (doesn't need to be in "")
         data: Vec<String>,
+    },
+}
+
+#[derive(StructOpt, Debug)]
+pub enum RCmd {
+    /// List subcommand
+    List {
+        /// Name of the list
+        list_name: String,
+    },
+    /// Task subcommand
+    Task {
+        /// number of the task to be removed
+        num: i32,
+        /// list to remove the task from (defaults to active list if not given)
+        list: Option<String>,
     },
 }

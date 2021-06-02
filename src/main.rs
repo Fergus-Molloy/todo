@@ -8,8 +8,7 @@ mod opt;
 mod task;
 
 use crate::task::Task;
-use opt::Cmd;
-use opt::Opt;
+use opt::{Cmd, Opt, RCmd};
 
 fn main() {
     let opt = Opt::from_args();
@@ -101,21 +100,9 @@ fn main() {
                 Err(e) => eprintln!("Could not update {}\nReason: {}", num, e),
             }
         }
-        Opt::Remove { list, value } => match list {
-            Some(cmd) => {
-                // using if let because it's much more neat than a single arm match
-                #[allow(irrefutable_let_patterns)]
-                if let Cmd::List { list_name } = cmd {
-                    database::remove::remove_list(list_name)
-                }
-            }
-            None => match value {
-                Some(num) => database::remove::remove_task(num, None),
-                None => {
-                    eprintln!("No list or value given, exiting");
-                    std::process::exit(1);
-                }
-            },
+        Opt::Remove { cmd } => match cmd {
+            RCmd::List { list_name } => database::remove::remove_list(list_name),
+            RCmd::Task { num, list } => database::remove::remove_task(num, list),
         },
         Opt::Swap {
             list,
