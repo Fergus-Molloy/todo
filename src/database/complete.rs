@@ -25,9 +25,13 @@ pub fn complete(num: i32, list: Option<String>) -> Result<usize> {
 
     // create query to update completeness
     // set to 0 if already complete otherwise set to 1
-    let update = format!(
-        "UPDATE tasks SET complete=={} WHERE num==?", //TODO need to filter by list here
-        if already_complete { 0 } else { 1 }
-    );
-    con.execute(&update, params![num])
+    let update = r"UPDATE tasks as t SET complete==? WHERE t.id IN
+        (SELECT tt.id FROM tasks as tt
+         INNER JOIN task_to_list ON tt.id==task_to_list.task
+         INNER JOIN lists ON lists.id==task_to_list.list
+         WHERE lists.id==? AND tt.num==?)";
+    con.execute(
+        &update,
+        params![if already_complete { 0 } else { 1 }, list_id, num],
+    )
 }
