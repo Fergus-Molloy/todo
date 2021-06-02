@@ -1,7 +1,6 @@
 use crate::database::database;
 use rusqlite::Result;
 
-// Delete
 pub fn clean(list_name: Option<String>) -> Result<usize> {
     // find completed tasks and remove them
     let list_id = match database::list_exists(list_name) {
@@ -12,7 +11,10 @@ pub fn clean(list_name: Option<String>) -> Result<usize> {
         }
     };
 
-    println!("Cleaning {}", list_id);
+    println!(
+        "Cleaning {}",
+        database::get_list_name(list_id).expect("Error getting list name")
+    );
     let con = database::connect().unwrap();
     let remove = r"
     DELETE from tasks as t where t.id IN (select tt.id from tasks as tt

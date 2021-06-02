@@ -1,14 +1,14 @@
 use crate::database::database;
 use rusqlite::Result;
 
-pub fn new_list(name: String) -> i32 {
+pub fn _new_list(name: String) -> i32 {
     match database::list_exists(Some(name.clone())) {
         Ok(id) => {
             println!("List already exists");
             id
         }
         Err(_) => {
-            if database::user_agreement(format!(
+            if database::_user_agreement(format!(
                 "List {} not recoginsed create new list? (y/n)",
                 name
             )) {

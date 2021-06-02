@@ -29,10 +29,11 @@ SUBCOMMANDS:
 ```
 
 # Notes
-Uses an sqlite db located at `~/.todo.db` hopefully
+Uses an sqlite db located at `~/.todo.db`
 
 # Todo
 
 - [x] Automatically create database if it doesn't exist
-- [ ] clean up code in database.rs (pls don't look it's terrifying)
+- [x] clean up code in database.rs (pls don't look it's terrifying)
 - [ ] deal with all the different possible unexpected outcomes (silly users typing things in wrong)
+- [ ] add a logger to tidy up some of the outputs

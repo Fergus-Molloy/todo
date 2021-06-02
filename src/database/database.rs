@@ -94,7 +94,7 @@ pub fn get_current_list_id() -> i32 {
     res.unwrap()
 }
 
-pub fn user_agreement<S: Display>(phrase: S) -> bool {
+pub fn _user_agreement<S: Display>(phrase: S) -> bool {
     let accept_phrases: [&str; 4] = ["y", "yes", "yeah", "yy"];
     println!("{}", phrase);
     let mut inp = String::new();

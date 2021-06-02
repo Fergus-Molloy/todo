@@ -41,7 +41,7 @@ pub enum Opt {
         /// Ordering of the tasks `num` for numerical order or blank for priority ordering
         order: Option<String>,
     },
-    /// remove a task or list
+    /// Remove a task or list
     Remove {
         /// Subcommand to choose what to remove can be `task` or `list`
         #[structopt(subcommand)]
@@ -60,7 +60,7 @@ pub enum Opt {
     /// Update nums so there are no gaps
     /// (may arbitrarily change the order)
     Update {
-        /// list to update
+        /// List to update
         list: Option<String>,
     },
     /// Test command please ignore
@@ -69,12 +69,12 @@ pub enum Opt {
 
 #[derive(StructOpt, Debug)]
 pub enum Cmd {
-    /// List subcommand
+    /// Add a list
     List {
-        /// Name of the list
+        /// Name of the list to add
         list_name: String,
     },
-    /// Task subcommand
+    /// Add a task
     Task {
         #[structopt(short, long)]
         /// The priority of the given task (defaults to LOW)
@@ -90,16 +90,16 @@ pub enum Cmd {
 
 #[derive(StructOpt, Debug)]
 pub enum RCmd {
-    /// List subcommand
+    /// Remove a list
     List {
-        /// Name of the list
+        /// Name of the list to remove
         list_name: String,
     },
-    /// Task subcommand
+    /// Remove a task
     Task {
-        /// number of the task to be removed
+        /// Number of the task to be removed
         num: i32,
-        /// list to remove the task from (defaults to active list if not given)
+        /// List to remove the task from (defaults to active list if not given)
         list: Option<String>,
     },
 }

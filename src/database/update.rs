@@ -22,7 +22,6 @@ pub fn update_nums(list: Option<String>) -> Result<usize> {
             let id: i32 = row.get(0)?;
             let p: i32 = row.get(1)?;
             let num: i32 = row.get(2)?;
-            println!("found task with id: {}", id);
             Ok((id, p, num))
         })
         .unwrap();
@@ -38,7 +37,7 @@ pub fn update_nums(list: Option<String>) -> Result<usize> {
     for task in tasks.iter() {
         count += 1;
         match con.execute(update, params![count, task.0]) {
-            Ok(_) => println!("updating task with id {}", task.0),
+            Ok(_) => println!("updating task with id {} to num {}", task.0, count),
             Err(e) => panic!("could not update task with id: {}\nerror: {}", task.0, e),
         }
     }

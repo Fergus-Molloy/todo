@@ -35,7 +35,7 @@ fn main() {
         },
         Opt::Clean { list } => {
             let count = database::clean::clean(list).unwrap();
-            if count > 1 {
+            if count >= 1 {
                 println!("Removed {} items", count);
             } else {
                 println!("No tasks cleaned");
