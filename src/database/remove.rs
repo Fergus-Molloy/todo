@@ -1,5 +1,7 @@
 use crate::database::database;
 
+//TODO: remove task_to_list item too
+
 // needs redoing now multiple tasks can have the same num
 // Delete
 pub fn remove_task(num: i32, list: Option<String>) {

@@ -13,20 +13,18 @@ pub fn get_tasks(list: Option<String>) -> Vec<Task> {
     let mut stmt = con.prepare(get).unwrap();
     let stmt_iter = stmt
         .query_map(params![list], |row| {
-            Ok(Task {
+            let task = Task {
                 id: row.get(0)?,
                 num: row.get(1)?,
-                complete: {
-                    let res: i32 = row.get(2)?;
-                    res == 1
-                },
+                complete: row.get(2)?,
                 priority: {
                     let res: i32 = row.get(3)?;
                     Priority::new(res)
                 },
                 data: row.get(4)?,
                 list: row.get(5)?,
-            })
+            };
+            Ok(task)
         })
         .unwrap();
 

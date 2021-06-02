@@ -3,6 +3,13 @@ use std::fmt::Display;
 use std::io;
 use std::path::PathBuf;
 
+// TODO: Create a function to check if list exists
+//  - should take name of list
+//  - return result (Ok(list_id) or Err(list doesn't exits))
+// TODO: Create function to consume above error and ask user to create new list
+//  - Should return result (Ok(list_id) or Err(rusqlite error))
+//  - If user does not want to create list program should exit gracefully
+
 // init
 pub fn db_get() -> PathBuf {
     let mut todo = dirs::home_dir().unwrap();

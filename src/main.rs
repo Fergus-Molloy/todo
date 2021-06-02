@@ -7,6 +7,7 @@ mod database;
 mod opt;
 mod task;
 
+use crate::task::Task;
 use opt::Cmd;
 use opt::Opt;
 
@@ -40,11 +41,23 @@ fn main() {
             None => database::add::new_task(data.join(" "), priority.unwrap_or(0), list),
         },
         Opt::Clean { list } => {
-            let count = database::clean::clean(list);
-            println!("Removed {} items", count.unwrap());
+            let count = database::clean::clean(list).unwrap();
+            if count > 1 {
+                println!("Removed {} items", count);
+            } else {
+                println!("No tasks cleaned");
+            }
         }
         Opt::Complete { num, list } => match database::complete::complete(num, list) {
-            Ok(_) => println!("Completed {:03}", num),
+            Ok(updated) => {
+                if updated == 1 {
+                    println!("Completed {:03}", num)
+                } else if updated > 1 {
+                    eprintln!("Updated {} rows, something has gone wrong!", updated);
+                } else {
+                    println!("Task could not be completed (it might not exist)");
+                }
+            }
             Err(e) => panic!("could not update {}:\n{}", num, e),
         },
         Opt::Lists => {
@@ -64,25 +77,17 @@ fn main() {
         }
         Opt::Tasks { list, order } => {
             let mut tasks = database::tasks::get_tasks(list.clone()); // get tasks
-            match order.as_deref() {
-                // order tasks
-                Some("num") => tasks.sort_by(|task, other| task.num.cmp(&other.num)),
-                _ => tasks.sort_by(|task, other| {
-                    other
-                        .priority
-                        .partial_cmp(&task.priority)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                }),
-            }
-            // print tasks
             println!(
                 "{}:",
                 list.unwrap_or(database::database::get_current_list_name())
             );
             if tasks.len() > 1 {
+                order_tasks(&mut tasks, order);
                 for task in tasks {
                     println!("{}", task);
                 }
+            } else if tasks.len() == 1 {
+                println!("{}", tasks[0]);
             } else {
                 println!("No tasks here");
             }
@@ -122,5 +127,18 @@ fn main() {
             "Updated {} items",
             database::update::update_nums(list).unwrap()
         ),
+    }
+}
+
+fn order_tasks(task_list: &mut Vec<Task>, order: Option<String>) {
+    match order.as_deref() {
+        // order tasks
+        Some("num") => task_list.sort_by(|task, other| task.num.cmp(&other.num)),
+        _ => task_list.sort_by(|task, other| {
+            other
+                .priority
+                .partial_cmp(&task.priority)
+                .unwrap_or(std::cmp::Ordering::Less)
+        }),
     }
 }
