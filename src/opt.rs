@@ -5,16 +5,7 @@ pub enum Opt {
     /// Add a new task to your todo list
     Add {
         #[structopt(subcommand)]
-        cmd: Option<Cmd>,
-        #[structopt(short, long)]
-        /// The priority of the given tasks (defaults to LOW)
-        priority: Option<i32>,
-        #[structopt(short, long)]
-        /// The list to add the task to (defaults to active list if not given)
-        list: Option<String>,
-        #[structopt(name = "TASK", parse(from_str))]
-        // The task to add (doesn't need to be in "")
-        data: Vec<String>,
+        cmd: Cmd,
     },
     /// Remove completed tasks from your todo list
     Clean {
@@ -80,5 +71,18 @@ pub enum Opt {
 
 #[derive(StructOpt, Debug)]
 pub enum Cmd {
-    List { list_name: String },
+    List {
+        list_name: String,
+    },
+    Task {
+        #[structopt(short, long)]
+        /// The priority of the given tasks (defaults to LOW)
+        priority: Option<i32>,
+        #[structopt(short, long)]
+        /// The list to add the task to (defaults to active list if not given)
+        list: Option<String>,
+        #[structopt(name = "TASK", parse(from_str))]
+        // The task to add (doesn't need to be in "")
+        data: Vec<String>,
+    },
 }

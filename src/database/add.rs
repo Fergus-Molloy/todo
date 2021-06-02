@@ -12,7 +12,7 @@ pub fn new_list(name: String) -> i32 {
                 "List {} not recoginsed create new list? (y/n)",
                 name
             )) {
-                match create_list(&name) {
+                match create_list(name) {
                     Ok(v) => v as i32,
                     Err(e) => {
                         eprintln!("Could not create list: {}", e);
@@ -26,8 +26,8 @@ pub fn new_list(name: String) -> i32 {
         }
     }
 }
-// insert
-pub fn create_list(name: &String) -> Result<usize> {
+
+pub fn create_list(name: String) -> Result<usize> {
     let con = database::connect().unwrap();
     let create = r"
     INSERT INTO lists (name, current, MaxNum) values(?, 0, 0);

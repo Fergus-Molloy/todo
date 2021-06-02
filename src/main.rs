@@ -14,31 +14,25 @@ use opt::Opt;
 fn main() {
     let opt = Opt::from_args();
     match opt {
-        Opt::Add {
-            cmd,
-            priority,
-            list,
-            data,
-        } => match cmd {
-            // change to act like remove (use cmd to specify adding a list and adding task to
-            // specific list)
-            Some(cmd) => {
-                // using if let because it's much more neat than a single arm match
-                #[allow(irrefutable_let_patterns)]
-                if let Cmd::List { list_name } = cmd {
-                    match database::add::create_list(&list_name) {
-                        Ok(_) => println!("Created list {}", list_name),
-                        Err(e) => {
-                            eprintln!(
-                                "Could not create list {}\n An error occurred: {}",
-                                list_name, e
-                            );
-                            std::process::exit(1);
-                        }
-                    }
+        Opt::Add { cmd } => match cmd {
+            Cmd::List { list_name } => match database::add::create_list(list_name.clone()) {
+                Ok(_) => println!("Created list {}", list_name),
+                Err(e) => {
+                    eprintln!(
+                        "Could not create list {}\n An error occurred: {}",
+                        list_name, e
+                    );
+                    std::process::exit(1);
                 }
+            },
+            Cmd::Task {
+                priority,
+                list,
+                data,
+            } => {
+                println!("Adding task");
+                database::add::new_task(data.join(" "), priority.unwrap_or(0), list);
             }
-            None => database::add::new_task(data.join(" "), priority.unwrap_or(0), list),
         },
         Opt::Clean { list } => {
             let count = database::clean::clean(list).unwrap();
