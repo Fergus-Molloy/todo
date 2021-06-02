@@ -3,9 +3,6 @@ use std::fmt::Display;
 use std::io;
 use std::path::PathBuf;
 
-// TODO: Create a function to check if list exists
-//  - should take name of list
-//  - return result (Ok(list_id) or Err(list doesn't exits))
 // TODO: Create function to consume above error and ask user to create new list
 //  - Should return result (Ok(list_id) or Err(rusqlite error))
 //  - If user does not want to create list program should exit gracefully
@@ -64,6 +61,7 @@ pub fn connect() -> Result<Connection> {
     let todo = db_get();
     Connection::open(todo)
 }
+
 pub fn get_list_name(list_id: i32) -> Result<String> {
     let con = connect().unwrap();
     let sql = "SELECT name from lists where id==?";

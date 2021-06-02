@@ -32,16 +32,23 @@ pub fn remove_task(num: i32, list: Option<String>) {
 
 // Delete
 pub fn remove_list(name: String) {
+    let list_id = match database::list_exists(Some(name.clone())) {
+        Ok(id) => id,
+        Err(_) => {
+            eprintln!("Cannot remove list (doesn't exist)");
+            std::process::exit(1);
+        }
+    };
     let con = database::connect().unwrap();
     let sql = r"
     DELETE from tasks as t where t.id IN (select tt.id from tasks as tt
     INNER JOIN task_to_list ON tt.id== task_to_list.task
     INNER JOIN lists ON lists.id==task_to_list.list
-    WHERE lists.name==?)";
-    con.execute(sql, params![name]).unwrap();
+    WHERE lists.id==?)";
+    con.execute(sql, params![list_id]).unwrap();
     let sql = r"
-    DELETE from lists where lists.name==?
+    DELETE from lists where lists.id==?
     ";
-    con.execute(sql, params![name]).unwrap();
+    con.execute(sql, params![list_id]).unwrap();
     println!("Removed {}", name);
 }
