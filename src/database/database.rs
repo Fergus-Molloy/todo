@@ -10,7 +10,6 @@ use std::path::PathBuf;
 //  - Should return result (Ok(list_id) or Err(rusqlite error))
 //  - If user does not want to create list program should exit gracefully
 
-// init
 pub fn db_get() -> PathBuf {
     let mut todo = dirs::home_dir().unwrap();
     todo.push(".todo.db");
@@ -61,30 +60,37 @@ pub fn db_get() -> PathBuf {
     todo
 }
 
-// init
 pub fn connect() -> Result<Connection> {
     let todo = db_get();
     Connection::open(todo)
 }
-
-// fetch
-pub fn get_list_id(name: &String) -> Result<i32> {
+pub fn get_list_name(list_id: i32) -> Result<String> {
     let con = connect().unwrap();
-    let get = r"
-    SELECT id FROM lists
-    WHERE name==?
-    ";
-    let result = con.query_row(get, params![name], |row| Ok(row.get(0)?))?;
+    let sql = "SELECT name from lists where id==?";
+    let result = con.query_row(sql, params![list_id], |row| Ok(row.get(0)?))?;
     Ok(result)
 }
 
-// fetch
-pub fn get_current_list_name() -> String {
+pub fn list_exists(name: Option<String>) -> Result<i32> {
+    match name {
+        Some(list_name) => {
+            let con = connect().unwrap();
+            let get = r"
+            SELECT id FROM lists
+            WHERE name==?";
+            let result = con.query_row(get, params![list_name], |row| Ok(row.get(0)?))?;
+            Ok(result)
+        }
+        None => Ok(get_current_list_id()),
+    }
+}
+
+pub fn get_current_list_id() -> i32 {
     let con = connect().unwrap();
-    let get = "SELECT name FROM lists WHERE current==1";
+    let get = "SELECT id FROM lists WHERE current==1";
     let mut stmt = con.prepare(get).unwrap();
     let res = stmt.query_row(NO_PARAMS, |row| {
-        let name: String = row.get(0)?;
+        let name: i32 = row.get(0)?;
         Ok(name)
     });
     res.unwrap()
@@ -100,19 +106,24 @@ pub fn user_agreement<S: Display>(phrase: S) -> bool {
     accept_phrases.iter().any(|&x| x == inp)
 }
 
-// update
 pub fn _update_nums(list: Option<String>) -> Result<usize> {
-    let list = list.unwrap_or(get_current_list_name());
+    let list_id = match list_exists(list) {
+        Ok(val) => val,
+        Err(e) => {
+            eprintln!("Cannot update nums (list doesn't exist): {}", e);
+            std::process::exit(1);
+        }
+    };
     let sql = r"
     SELECT t.id, t.priority, t.num FROM tasks AS t
     INNER JOIN task_to_list ON t.id==task_to_list.task
     INNER JOIN lists ON task_to_list.list==lists.id
-    WHERE lists.name==?";
+    WHERE lists.id==?";
     let update = "UPDATE tasks SET num=? WHERE id==?";
     let con = connect().unwrap();
     let mut stmt = con.prepare(sql).unwrap();
     let iter = stmt
-        .query_map(params![list], |row| {
+        .query_map(params![list_id], |row| {
             let id: i32 = row.get(0)?;
             let p: i32 = row.get(1)?;
             let num: i32 = row.get(2)?;

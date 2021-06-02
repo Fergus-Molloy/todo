@@ -77,9 +77,18 @@ fn main() {
         }
         Opt::Tasks { list, order } => {
             let mut tasks = database::tasks::get_tasks(list.clone()); // get tasks
+            let list_id = match database::database::list_exists(list) {
+                Ok(val) => val,
+                Err(e) => {
+                    eprintln!("An error occured getting the list name: {}", e);
+                    std::process::exit(1);
+                }
+            };
+
             println!(
                 "{}:",
-                list.unwrap_or(database::database::get_current_list_name())
+                database::database::get_list_name(list_id)
+                    .expect("An error occured getting the list name")
             );
             if tasks.len() > 1 {
                 order_tasks(&mut tasks, order);
@@ -119,13 +128,17 @@ fn main() {
             num_one,
             num_two,
         } => database::swap::swap(num_one, num_two, list),
-        Opt::Switch { list } => match database::switch::switch_list(&list) {
+        Opt::Switch { list } => match database::switch::switch_list(list.clone()) {
             Ok(_) => println!("Set current list to {}", list),
             Err(e) => eprintln!("Could not update!\nReason: {}", e),
         },
         Opt::Update { list } => println!(
             "Updated {} items",
             database::update::update_nums(list).unwrap()
+        ),
+        Opt::Test => println!(
+            "{:?}",
+            database::database::list_exists(Some(String::from("test")))
         ),
     }
 }

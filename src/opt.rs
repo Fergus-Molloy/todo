@@ -65,7 +65,9 @@ pub enum Opt {
         num_two: i32,
     },
     /// Make the given list the active list
-    Switch { list: String },
+    Switch {
+        list: String,
+    },
     /// Remove a single item or list
     /// Update nums so there are no gaps
     /// (may arbitrarily change the order)
@@ -73,6 +75,7 @@ pub enum Opt {
         /// list to update
         list: Option<String>,
     },
+    Test,
 }
 
 #[derive(StructOpt, Debug)]

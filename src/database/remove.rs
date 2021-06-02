@@ -5,22 +5,28 @@ use crate::database::database;
 // needs redoing now multiple tasks can have the same num
 // Delete
 pub fn remove_task(num: i32, list: Option<String>) {
-    let list = list.unwrap_or(database::get_current_list_name());
+    let list_id = match database::list_exists(list) {
+        Ok(val) => val,
+        Err(e) => {
+            eprintln!("Cannot update nums (list doesn't exist): {}", e);
+            std::process::exit(1);
+        }
+    };
     let con = database::connect().unwrap();
     let sql = r"
     DELETE from tasks as t where t.id IN (select tt.id from tasks as tt
     INNER JOIN task_to_list ON tt.id== task_to_list.task
     INNER JOIN lists ON lists.id==task_to_list.list
-    WHERE lists.name==? AND tt.num==?);
+    WHERE lists.id==? AND tt.num==?);
     ";
     let mut stmt = con.prepare(sql).unwrap();
-    stmt.execute(params![list, num]).unwrap();
+    stmt.execute(params![list_id, num]).unwrap();
     let sql = r"
     UPDATE lists SET MaxNum=(
-    SELECT MaxNum FROM lists WHERE name=:name)-1 WHERE name=:name
+    SELECT MaxNum FROM lists WHERE id=:id)-1 WHERE id=:id
     ";
     let mut stmt = con.prepare(sql).unwrap();
-    stmt.execute_named(named_params! {":name": list}).unwrap();
+    stmt.execute_named(named_params! {":id": list_id}).unwrap();
     println!("Removed task {}", num);
 }
 

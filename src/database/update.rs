@@ -2,17 +2,23 @@ use crate::database::database;
 use rusqlite::Result;
 
 pub fn update_nums(list: Option<String>) -> Result<usize> {
-    let list = list.unwrap_or(database::get_current_list_name());
+    let list_id = match database::list_exists(list) {
+        Ok(val) => val,
+        Err(e) => {
+            eprintln!("Cannot update nums (list doesn't exist): {}", e);
+            std::process::exit(1);
+        }
+    };
     let sql = r"
     SELECT t.id, t.priority, t.num FROM tasks AS t
     INNER JOIN task_to_list ON t.id==task_to_list.task
     INNER JOIN lists ON task_to_list.list==lists.id
-    WHERE lists.name==?";
+    WHERE lists.id==?";
     let update = "UPDATE tasks SET num=? WHERE id==?";
     let con = database::connect().unwrap();
     let mut stmt = con.prepare(sql).unwrap();
     let iter = stmt
-        .query_map(params![list], |row| {
+        .query_map(params![list_id], |row| {
             let id: i32 = row.get(0)?;
             let p: i32 = row.get(1)?;
             let num: i32 = row.get(2)?;

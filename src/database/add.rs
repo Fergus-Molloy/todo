@@ -1,15 +1,18 @@
-use crate::database::database::{connect, get_current_list_name, get_list_id, user_agreement};
+use crate::database::database;
 use rusqlite::Result;
 
-pub fn new_list(name: &String) -> i32 {
-    match get_list_id(name) {
-        Ok(id) => id, //list already exists
+pub fn new_list(name: String) -> i32 {
+    match database::list_exists(Some(name.clone())) {
+        Ok(id) => {
+            println!("List already exists");
+            id
+        }
         Err(_) => {
-            if user_agreement(format!(
+            if database::user_agreement(format!(
                 "List {} not recoginsed create new list? (y/n)",
                 name
             )) {
-                match create_list(name.into()) {
+                match create_list(&name) {
                     Ok(v) => v as i32,
                     Err(e) => {
                         eprintln!("Could not create list: {}", e);
@@ -25,7 +28,7 @@ pub fn new_list(name: &String) -> i32 {
 }
 // insert
 pub fn create_list(name: &String) -> Result<usize> {
-    let con = connect().unwrap();
+    let con = database::connect().unwrap();
     let create = r"
     INSERT INTO lists (name, current, MaxNum) values(?, 0, 0);
     ";
@@ -34,9 +37,14 @@ pub fn create_list(name: &String) -> Result<usize> {
 }
 
 pub fn new_task(data: String, priority: i32, list: Option<String>) {
-    let list = list.unwrap_or(get_current_list_name());
-    let list_id = new_list(&list);
-    let con = connect().unwrap();
+    let list_id = match database::list_exists(list) {
+        Ok(val) => val,
+        Err(e) => {
+            eprintln!("Cannot update nums (list doesn't exist): {}", e);
+            std::process::exit(1);
+        }
+    };
+    let con = database::connect().unwrap();
     let p: i32 = priority.into();
     let d: String = data.into();
     let add_task = r"
@@ -57,7 +65,11 @@ pub fn new_task(data: String, priority: i32, list: Option<String>) {
         .unwrap();
     let stmt = con.execute_named(update_lists, named_params! {":list": list_id});
     match stmt {
-        Ok(_) => println!("Sucessfully added task to {}\n{}", list, d),
+        Ok(_) => println!(
+            "Sucessfully added task to {}\n{}",
+            database::get_list_name(list_id).expect("Something went worng getting list name"),
+            d
+        ),
         Err(e) => panic!("{}", e),
     }
 }
