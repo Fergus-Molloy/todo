@@ -2,7 +2,7 @@ use crate::database::database;
 
 pub fn remove_task(num: i32, list: Option<String>) {
     // get id of list
-    let list_id = match database::list_exists(list) {
+    let list_id = match database::list_exists(&list) {
         Ok(val) => val,
         Err(e) => {
             eprintln!("Cannot update nums (list doesn't exist): {}", e);
@@ -17,7 +17,7 @@ pub fn remove_task(num: i32, list: Option<String>) {
             std::process::exit(1);
         }
     };
-    let con = database::connect().unwrap(); // connect to db
+    let con = database::connect(); // connect to db
 
     // delete task from table `tasks` where num and list id match (should be 1 row)
     let del_task = r"
@@ -35,26 +35,18 @@ pub fn remove_task(num: i32, list: Option<String>) {
     let res = stmt.execute(params![task_id]).unwrap();
     assert_eq!(res, 1);
 
-    // Update the maxnum in `lists` to reflect the new number of tasks (should change 1 row)
-    let sql = r"
-    UPDATE lists SET MaxNum=(
-    SELECT MaxNum FROM lists WHERE id=:id)-1 WHERE id=:id";
-    let mut stmt = con.prepare(sql).unwrap();
-    let res = stmt.execute_named(named_params! {":id": list_id}).unwrap();
-    assert_eq!(res, 1);
-
     println!("Removed task {}", num);
 }
 
 pub fn remove_list(list_name: String) {
-    let list_id = match database::list_exists(Some(list_name.clone())) {
+    let list_id = match database::list_exists(&Some(list_name)) {
         Ok(id) => id,
         Err(_) => {
             eprintln!("Cannot remove list (doesn't exist)");
             std::process::exit(1);
         }
     };
-    let con = database::connect().unwrap();
+    let con = database::connect();
 
     if database::user_agreement(format!(
         r"Are you sure you want to delete {}?
@@ -63,8 +55,8 @@ pub fn remove_list(list_name: String) {
     )) {
         // delete all tasks associated with list
         let del_tasks = r"
-    DELETE from tasks as t where t.id IN (select tt.id from tasks as tt
-    INNER JOIN task_to_list ON tt.id== task_to_list.task
+    DELETE from tasks AS t WHERE t.id IN (SELECT tt.id FROM tasks AS tt
+    INNER JOIN task_to_list ON tt.id==task_to_list.task
     INNER JOIN lists ON lists.id==task_to_list.list
     WHERE lists.id==?)";
         let count = con.execute(del_tasks, params![list_id]).unwrap();

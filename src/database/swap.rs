@@ -1,17 +1,18 @@
 use crate::database::database;
+use rusqlite::Result;
 
 pub fn swap(num_one: i32, num_two: i32, list: Option<String>) -> Result<()> {
-    let list_id = match database::list_exists(list) {
+    let list_id = match database::list_exists(&list) {
         Ok(val) => val,
         Err(e) => {
             eprintln!("Cannot update nums (list doesn't exist): {}", e);
             std::process::exit(1);
         }
     };
-    let con = database::connect().unwrap();
+    let con = database::connect();
 
     let get_task_id = r"
-    SELECT t.id from tasks as t
+    SELECT t.id FROM tasks AS t
     INNER JOIN task_to_list ON t.id==task_to_list.task
     INNER JOIN lists ON task_to_list.list==lists.id
     WHERE lists.id==? AND t.num==?";

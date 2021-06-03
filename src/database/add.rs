@@ -1,8 +1,9 @@
+#![warn(missing_docs)]
 use crate::database::database;
 use rusqlite::Result;
 
 pub fn _new_list(name: String) -> i32 {
-    match database::list_exists(Some(name.clone())) {
+    match database::list_exists(&Some(name)) {
         Ok(id) => {
             println!("List already exists");
             id
@@ -27,49 +28,45 @@ pub fn _new_list(name: String) -> i32 {
     }
 }
 
+/// Add a list with the given name to the database
+///
+/// Returns a result containing the number of rows affected
 pub fn create_list(name: String) -> Result<usize> {
-    let con = database::connect().unwrap();
-    let create = r"
-    INSERT INTO lists (name, current, MaxNum) values(?, 0, 0);
-    ";
+    let con = database::connect();
+    let create = "INSERT INTO lists (name, current, MaxNum) VALUES(?, 0, 0);";
     let mut stmt = con.prepare(create).unwrap();
     stmt.execute(params![name])
 }
 
-pub fn new_task(data: String, priority: i32, list: Option<String>) {
-    let list_id = match database::list_exists(list) {
+/// Add a new task to the database
+///
+/// Adds the task to the given list or the active list if no list is given
+pub fn new_task(data: String, priority: i32, list: Option<String>) -> Result<usize> {
+    // check list exists and get it's id
+    let list_id = match database::list_exists(&list) {
         Ok(val) => val,
         Err(e) => {
             eprintln!("Cannot update nums (list doesn't exist): {}", e);
             std::process::exit(1);
         }
     };
-    let con = database::connect().unwrap();
-    let p: i32 = priority.into();
-    let d: String = data.into();
-    let add_task = r"
-    INSERT INTO tasks (num, complete, data, priority) values(
-    (SELECT lists.MaxNum as max FROM lists where lists.id==:list), 0,:data,:p)";
-    let add_task_to_list = r"
-    INSERT INTO task_to_list (task, list) VALUES ((SELECT MAX(id) as task_id from tasks), :list)";
-    let update_lists = r"
-    UPDATE lists set MaxNum=(SELECT lists.MaxNum as max FROM lists where lists.id==:list)+1
-    where lists.id==:list";
+    let con = database::connect();
+    let p: i32 = priority;
+    let d: String = data;
 
-    con.execute_named(
-        add_task,
-        named_params! {":list": list_id, ":data": d, ":p": p},
-    )
-    .unwrap();
-    con.execute_named(add_task_to_list, named_params! {":list": list_id})
-        .unwrap();
-    let stmt = con.execute_named(update_lists, named_params! {":list": list_id});
-    match stmt {
-        Ok(_) => println!(
-            "Sucessfully added task to {}\n{}",
-            database::get_list_name(list_id).expect("Something went worng getting list name"),
-            d
-        ),
-        Err(e) => panic!("{}", e),
-    }
+    let add_task = r"
+    INSERT INTO tasks (num, complete, data, priority) VALUES(
+    (SELECT lists.MaxNum AS max FROM lists where lists.id==?), 0,?,?)";
+    con.execute(add_task, params![list_id, d, p])?;
+
+    let add_task_to_list = r"
+    INSERT INTO task_to_list (task, list)
+    VALUES ((SELECT MAX(id) AS task_id from tasks), ?)";
+    con.execute(add_task_to_list, params![list_id])?;
+
+    let update_lists = r"
+    UPDATE lists SET MaxNum=(
+    SELECT lists.MaxNum AS max FROM lists WHERE lists.id==:list)+1
+    WHERE lists.id==:list";
+    con.execute_named(update_lists, named_params! {":list": list_id})
 }

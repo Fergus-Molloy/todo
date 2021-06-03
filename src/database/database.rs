@@ -3,10 +3,7 @@ use std::fmt::Display;
 use std::io;
 use std::path::PathBuf;
 
-// TODO: Create function to consume above error and ask user to create new list
-//  - Should return result (Ok(list_id) or Err(rusqlite error))
-//  - If user does not want to create list program should exit gracefully
-
+/// Creates a new database if no existing database is found
 pub fn db_get() -> PathBuf {
     let mut todo = dirs::home_dir().unwrap();
     todo.push(".todo.db");
@@ -57,52 +54,61 @@ pub fn db_get() -> PathBuf {
     todo
 }
 
-pub fn connect() -> Result<Connection> {
+/// Returns a connection to database
+pub fn connect() -> Connection {
     let todo = db_get();
-    Connection::open(todo)
+    Connection::open(todo).expect("Could not connect to database")
 }
 
-pub fn get_list_name(list_id: i32) -> Result<String> {
-    let con = connect().unwrap();
+pub fn get_list_name(list_id: &i32) -> String {
+    let con = connect();
     let sql = "SELECT name from lists where id==?";
-    let result = con.query_row(sql, params![list_id], |row| Ok(row.get(0)?))?;
-    Ok(result)
+    con.query_row(sql, params![list_id], |row| Ok(row.get(0)?))
+        .expect("Cannot get list name")
 }
 
-pub fn list_exists(name: Option<String>) -> Result<i32> {
+pub fn list_exists(name: &Option<String>) -> Result<i32> {
     match name {
         Some(list_name) => {
-            let con = connect().unwrap();
-            let get = r"
-            SELECT id FROM lists
-            WHERE name==?";
-            let result = con.query_row(get, params![list_name], |row| Ok(row.get(0)?))?;
-            Ok(result)
+            let con = connect();
+            let get = "SELECT id FROM lists WHERE name==?";
+            con.query_row(get, params![list_name], |row| Ok(row.get(0)?))
         }
         None => Ok(get_current_list_id()),
     }
 }
 
-pub fn task_exists(num: i32, list_id: i32) -> Result<i32> {
-    let con = connect().unwrap();
+/// Gets the name of the list given or the current active list if `list_name` is `None`
+pub fn dynamic_list_name(list_name: &Option<String>) -> String {
+    let list_id = match list_exists(&list_name) {
+        Ok(id) => id,
+        Err(e) => {
+            eprintln!("Could not get list name (list doesn't exist)");
+            std::process::exit(1);
+        }
+    };
+    get_list_name(&list_id)
+}
+
+pub fn task_exists(num: &i32, list_id: &i32) -> Result<i32> {
+    let con = connect();
     let sql = r"SELECT tasks.id  FROM task_to_list
     INNER JOIN tasks ON tasks.id=task_to_list.task
     INNER JOIN lists ON lists.id=task_to_list.list
     WHERE lists.id==? ANd tasks.num=?";
     let mut stmt = con.prepare(sql).unwrap();
-    let res = stmt.query_row(params![list_id, num], |row| Ok(row.get(0)?))?;
-    Ok(res)
+    stmt.query_row(params![list_id, num], |row| Ok(row.get(0)?))
 }
 
 pub fn get_current_list_id() -> i32 {
-    let con = connect().unwrap();
+    let con = connect();
     let get = "SELECT id FROM lists WHERE current==1";
     let mut stmt = con.prepare(get).unwrap();
     let res = stmt.query_row(NO_PARAMS, |row| {
         let name: i32 = row.get(0)?;
         Ok(name)
     });
-    res.unwrap()
+    res.expect("Could not get current list's id")
 }
 
 pub fn user_agreement<S: Display>(phrase: S) -> bool {
@@ -113,48 +119,4 @@ pub fn user_agreement<S: Display>(phrase: S) -> bool {
         .read_line(&mut inp)
         .expect("could not read input");
     accept_phrases.iter().any(|&x| x == inp)
-}
-
-pub fn _update_nums(list: Option<String>) -> Result<usize> {
-    let list_id = match list_exists(list) {
-        Ok(val) => val,
-        Err(e) => {
-            eprintln!("Cannot update nums (list doesn't exist): {}", e);
-            std::process::exit(1);
-        }
-    };
-    let sql = r"
-    SELECT t.id, t.priority, t.num FROM tasks AS t
-    INNER JOIN task_to_list ON t.id==task_to_list.task
-    INNER JOIN lists ON task_to_list.list==lists.id
-    WHERE lists.id==?";
-    let update = "UPDATE tasks SET num=? WHERE id==?";
-    let con = connect().unwrap();
-    let mut stmt = con.prepare(sql).unwrap();
-    let iter = stmt
-        .query_map(params![list_id], |row| {
-            let id: i32 = row.get(0)?;
-            let p: i32 = row.get(1)?;
-            let num: i32 = row.get(2)?;
-            println!("found task with id: {}", id);
-            Ok((id, p, num))
-        })
-        .unwrap();
-    let mut tasks = Vec::new();
-    for row in iter {
-        match row {
-            Ok(v) => tasks.push(v),
-            Err(e) => panic!("Something went wrong: {}", e),
-        }
-    }
-    tasks.sort_by(|task, other| other.1.cmp(&task.1));
-    let mut count = -1;
-    for task in tasks.iter() {
-        count += 1;
-        match con.execute(update, params![count, task.0]) {
-            Ok(_) => println!("updating task with id {}", task.0),
-            Err(e) => panic!("could not update task with id: {}\nerror: {}", task.0, e),
-        }
-    }
-    Ok(tasks.len())
 }

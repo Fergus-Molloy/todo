@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+//! This crate aims to implement a simple todo list command line interface
 #[macro_use]
 extern crate rusqlite;
 
@@ -10,6 +12,9 @@ mod task;
 use crate::task::Task;
 use opt::{Cmd, Opt, RCmd};
 
+/// Main function handles the CLI using structopt
+///
+/// You can read about each option in [Opt]
 fn main() {
     let opt = Opt::from_args();
     match opt {
@@ -30,13 +35,26 @@ fn main() {
                 data,
             } => {
                 println!("Adding task");
-                database::add::new_task(data.join(" "), priority.unwrap_or(0), list);
+                match database::add::new_task(data.join(" "), priority.unwrap_or(0), list) {
+                    Ok(_) => println!(
+                        "Added task to list {}",
+                        database::database::dynamic_list_name(&list)
+                    ),
+                    Err(e) => {
+                        eprintln!("Could not add task to list: {}", e);
+                        std::process::exit(1);
+                    }
+                }
             }
         },
         Opt::Clean { list } => {
             let count = database::clean::clean(list).unwrap();
             if count >= 1 {
-                println!("Removed {} items", count);
+                println!(
+                    "Removed {} task{}",
+                    count,
+                    if count == 1 { "" } else { "s" }
+                );
             } else {
                 println!("No tasks cleaned");
             }
@@ -130,12 +148,15 @@ fn main() {
     }
 }
 
-/// Sorting methods
+/// All implemented sorting methods. Defaults to Priority sorting
 enum Sort {
+    /// Sort by number assigned to task
     Num,
+    /// Sort by Priority of the tasks
     Priority,
 }
 
+/// Function to parse the user's input into the sorting methods
 fn parse_order(inp: Option<String>) -> Sort {
     match inp.as_deref() {
         Some(string) => match string {
@@ -146,6 +167,7 @@ fn parse_order(inp: Option<String>) -> Sort {
     }
 }
 
+/// Orders the task according to the user's input
 fn order_tasks(task_list: &mut Vec<Task>, order: Option<String>) {
     match parse_order(order) {
         Sort::Num => task_list.sort_by(|task, other| task.num.cmp(&other.num)),

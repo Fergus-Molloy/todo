@@ -1,10 +1,9 @@
 use crate::database::database;
-use rusqlite::Result;
 
 pub fn complete(num: i32, list: Option<String>) -> Result<usize> {
-    let con = database::connect().unwrap();
+    let con = database::connect();
     // get id of list to be queried
-    let list_id = match database::list_exists(list) {
+    let list_id = match database::list_exists(&list) {
         Ok(val) => val,
         Err(e) => {
             eprintln!("Cannot update nums (list doesn't exist): {}", e);
@@ -30,8 +29,8 @@ pub fn complete(num: i32, list: Option<String>) -> Result<usize> {
     let already_complete = res.count() == 1; // count rows returned (1 means already completed)
 
     // create query to update completeness
-    let update = r"UPDATE tasks as t SET complete==? WHERE t.id IN
-        (SELECT tt.id FROM tasks as tt
+    let update = r"UPDATE tasks AS t SET complete==? WHERE t.id IN
+        (SELECT tt.id FROM tasks AS tt
          INNER JOIN task_to_list ON tt.id==task_to_list.task
          INNER JOIN lists ON lists.id==task_to_list.list
          WHERE lists.id==? AND tt.num==?)";

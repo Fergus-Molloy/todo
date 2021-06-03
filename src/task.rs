@@ -4,6 +4,7 @@ use std::fmt;
 const BOX_CHECKED: char = '☑';
 const BOX_UNCHECKED: char = '☐';
 
+/// Priority of the task
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum Priority {
     LOW,
@@ -12,6 +13,7 @@ pub enum Priority {
 }
 
 impl Priority {
+    /// Create new priority from an int
     pub fn new<T: Into<i32>>(val: T) -> Priority {
         match val.into() {
             0 => Priority::LOW,
@@ -22,6 +24,7 @@ impl Priority {
     }
 }
 
+/// Struct to represent a task
 #[derive(Debug)]
 pub struct Task {
     pub id: u32,
@@ -33,6 +36,7 @@ pub struct Task {
 }
 
 impl fmt::Display for Task {
+    /// Print a task
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let out = if self.complete {
             format!("{} {:03}: {}", BOX_CHECKED, self.num, self.data)
