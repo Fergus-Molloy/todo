@@ -26,8 +26,9 @@ pub fn update_nums(list: Option<String>) -> Result<usize> {
     INNER JOIN task_to_list ON t.id==task_to_list.task
     INNER JOIN lists ON task_to_list.list==lists.id
     WHERE lists.id==?";
-    let iter = con
-        .query_map(get_tasks, params![list_id], |row| {
+    let mut stmt = con.prepare(get_tasks).unwrap();
+    let iter = stmt
+        .query_map(params![list_id], |row| {
             let id: i32 = row.get(0)?;
             let p: i32 = row.get(1)?;
             let num: i32 = row.get(2)?;
