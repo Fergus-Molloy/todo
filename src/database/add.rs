@@ -8,7 +8,7 @@ pub fn _new_list(name: String) -> i32 {
             id
         }
         Err(_) => {
-            if database::_user_agreement(format!(
+            if database::user_agreement(format!(
                 "List {} not recoginsed create new list? (y/n)",
                 name
             )) {

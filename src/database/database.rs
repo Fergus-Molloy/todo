@@ -83,6 +83,17 @@ pub fn list_exists(name: Option<String>) -> Result<i32> {
     }
 }
 
+pub fn task_exists(num: i32, list_id: i32) -> Result<i32> {
+    let con = connect().unwrap();
+    let sql = r"SELECT tasks.id  FROM task_to_list
+    INNER JOIN tasks ON tasks.id=task_to_list.task
+    INNER JOIN lists ON lists.id=task_to_list.list
+    WHERE lists.id==? ANd tasks.num=?";
+    let mut stmt = con.prepare(sql).unwrap();
+    let res = stmt.query_row(params![list_id, num], |row| Ok(row.get(0)?))?;
+    Ok(res)
+}
+
 pub fn get_current_list_id() -> i32 {
     let con = connect().unwrap();
     let get = "SELECT id FROM lists WHERE current==1";
@@ -94,7 +105,7 @@ pub fn get_current_list_id() -> i32 {
     res.unwrap()
 }
 
-pub fn _user_agreement<S: Display>(phrase: S) -> bool {
+pub fn user_agreement<S: Display>(phrase: S) -> bool {
     let accept_phrases: [&str; 4] = ["y", "yes", "yeah", "yy"];
     println!("{}", phrase);
     let mut inp = String::new();

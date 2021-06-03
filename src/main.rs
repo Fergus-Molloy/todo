@@ -108,7 +108,13 @@ fn main() {
             list,
             num_one,
             num_two,
-        } => database::swap::swap(num_one, num_two, list),
+        } => match database::swap::swap(num_one, num_two, list) {
+            Ok(_) => println!("Swapped {} and {}", num_one, num_two),
+            Err(e) => {
+                eprintln!("Could not swap: {}", e);
+                std::process::exit(1);
+            }
+        },
         Opt::Switch { list } => match database::switch::switch_list(list.clone()) {
             Ok(_) => println!("Set current list to {}", list),
             Err(e) => eprintln!("Could not update!\nReason: {}", e),
@@ -124,11 +130,26 @@ fn main() {
     }
 }
 
+/// Sorting methods
+enum Sort {
+    Num,
+    Priority,
+}
+
+fn parse_order(inp: Option<String>) -> Sort {
+    match inp.as_deref() {
+        Some(string) => match string {
+            "num" => Sort::Num,
+            _ => Sort::Priority,
+        },
+        None => Sort::Priority,
+    }
+}
+
 fn order_tasks(task_list: &mut Vec<Task>, order: Option<String>) {
-    match order.as_deref() {
-        // order tasks
-        Some("num") => task_list.sort_by(|task, other| task.num.cmp(&other.num)),
-        _ => task_list.sort_by(|task, other| {
+    match parse_order(order) {
+        Sort::Num => task_list.sort_by(|task, other| task.num.cmp(&other.num)),
+        Sort::Priority => task_list.sort_by(|task, other| {
             other
                 .priority
                 .partial_cmp(&task.priority)
