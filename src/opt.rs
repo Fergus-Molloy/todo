@@ -63,8 +63,6 @@ pub enum Opt {
         /// List to update
         list: Option<String>,
     },
-    /// Test command please ignore
-    Test,
 }
 
 #[derive(StructOpt, Debug)]

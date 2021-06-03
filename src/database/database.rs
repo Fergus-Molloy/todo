@@ -82,7 +82,7 @@ pub fn list_exists(name: &Option<String>) -> Result<i32> {
 pub fn dynamic_list_name(list_name: &Option<String>) -> String {
     let list_id = match list_exists(&list_name) {
         Ok(id) => id,
-        Err(e) => {
+        Err(_) => {
             eprintln!("Could not get list name (list doesn't exist)");
             std::process::exit(1);
         }

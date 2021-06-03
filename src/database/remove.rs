@@ -10,7 +10,7 @@ pub fn remove_task(num: i32, list: Option<String>) {
         }
     };
     // get id of task
-    let task_id = match database::task_exists(num, list_id) {
+    let task_id = match database::task_exists(&num, &list_id) {
         Ok(val) => val,
         Err(e) => {
             eprintln!("Cannot remove task (task doesn't exist): {}", e);
@@ -39,7 +39,7 @@ pub fn remove_task(num: i32, list: Option<String>) {
 }
 
 pub fn remove_list(list_name: String) {
-    let list_id = match database::list_exists(&Some(list_name)) {
+    let list_id = match database::list_exists(&Some(list_name.clone())) {
         Ok(id) => id,
         Err(_) => {
             eprintln!("Cannot remove list (doesn't exist)");

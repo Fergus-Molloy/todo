@@ -1,4 +1,5 @@
 use crate::database::database;
+use rusqlite::Result;
 
 pub fn complete(num: i32, list: Option<String>) -> Result<usize> {
     let con = database::connect();

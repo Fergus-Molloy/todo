@@ -17,8 +17,9 @@ pub fn get_tasks(list: Option<String>) -> Result<Vec<Task>> {
     INNER JOIN tasks ON tasks.id=task_to_list.task
     INNER JOIN lists ON lists.id=task_to_list.list
     WHERE lists.id==?";
-    let stmt_iter = con
-        .query_map(get, params![list_id], |row| {
+    let mut stmt = con.prepare(get).unwrap();
+    let stmt_iter = stmt
+        .query_map(params![list_id], |row| {
             let task = Task {
                 id: row.get(0)?,
                 num: row.get(1)?,

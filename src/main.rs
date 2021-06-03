@@ -35,7 +35,7 @@ fn main() {
                 data,
             } => {
                 println!("Adding task");
-                match database::add::new_task(data.join(" "), priority.unwrap_or(0), list) {
+                match database::add::new_task(data.join(" "), priority.unwrap_or(0), list.clone()) {
                     Ok(_) => println!(
                         "Added task to list {}",
                         database::database::dynamic_list_name(&list)
@@ -48,7 +48,7 @@ fn main() {
             }
         },
         Opt::Clean { list } => {
-            let count = database::clean::clean(list).unwrap();
+            let count = database::clean::clean(list);
             if count >= 1 {
                 println!(
                     "Removed {} task{}",
@@ -87,8 +87,8 @@ fn main() {
             }
         }
         Opt::Tasks { list, order } => {
-            let mut tasks = database::tasks::get_tasks(list.clone()); // get tasks
-            let list_id = match database::database::list_exists(list) {
+            let mut tasks = database::tasks::get_tasks(list.clone()).unwrap(); // TODO: handle this error
+            let list_id = match database::database::list_exists(&list) {
                 Ok(val) => val,
                 Err(e) => {
                     eprintln!("An error occured getting the list name: {}", e);
@@ -96,11 +96,7 @@ fn main() {
                 }
             };
 
-            println!(
-                "{}:",
-                database::database::get_list_name(list_id)
-                    .expect("An error occured getting the list name")
-            );
+            println!("{}:", database::database::get_list_name(&list_id));
             if tasks.len() > 1 {
                 order_tasks(&mut tasks, order);
                 for task in tasks {
@@ -140,10 +136,6 @@ fn main() {
         Opt::Update { list } => println!(
             "Updated {} items",
             database::update::update_nums(list).unwrap()
-        ),
-        Opt::Test => println!(
-            "{:?}",
-            database::database::list_exists(Some(String::from("test")))
         ),
     }
 }

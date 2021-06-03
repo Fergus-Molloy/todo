@@ -3,7 +3,7 @@ use crate::database::database;
 use rusqlite::Result;
 
 pub fn _new_list(name: String) -> i32 {
-    match database::list_exists(&Some(name)) {
+    match database::list_exists(&Some(name.clone())) {
         Ok(id) => {
             println!("List already exists");
             id
