@@ -55,7 +55,7 @@ pub fn db_get() -> PathBuf {
         super::add::new_task(String::from("Add tasks using the add command `todo add task`.\nTasks can have a low, medium or high priority which can be specified with the `-p` option."), 2, Some(String::from("Tutorial"))).unwrap();
         super::add::new_task(String::from("Complete tasks by using `todo complete <num>`.\nDon't worry they won't disapprear until you `todo clean` your list!"), 1, Some(String::from("Tutorial"))).unwrap();
         super::add::new_task(String::from("You can explore the rest of the interface by using the `-h` flag for help with commands."), 0, Some(String::from("Tutorial"))).unwrap();
-        super::add::new_task(String::from("To start using this you can remove this list using `todo remove list Tutorial` and then create a new list using `todo add list <list_name>`."), 0, Some(String::from("Tutorial"))).unwrap();
+        super::add::new_task(String::from("To start using, you can remove this list using `todo remove list Tutorial` and\nthen create a new list using `todo add list <list_name>`."), 0, Some(String::from("Tutorial"))).unwrap();
     }
     assert!(todo.exists() && todo.is_file());
     todo
