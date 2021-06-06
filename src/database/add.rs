@@ -21,7 +21,7 @@ pub fn new_list(name: String) {
 /// Add a list with the given name to the database
 ///
 /// Returns a result containing the number of rows affected
-pub fn create_list(name: &String) -> Result<usize> {
+fn create_list(name: &String) -> Result<usize> {
     let con = database::connect();
     let create = "INSERT INTO lists (name, current, MaxNum) VALUES(?, 0, 0);";
     let mut stmt = con.prepare(create).unwrap();

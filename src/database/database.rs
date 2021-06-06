@@ -115,7 +115,32 @@ pub fn get_current_list_id() -> i32 {
         let name: i32 = row.get(0)?;
         Ok(name)
     });
-    res.expect("Could not get current list's id")
+    match res {
+        Ok(id) => id,
+        Err(_) => {
+            eprintln!("Could not get current list's id (maybe no lists exist?)");
+            if user_agreement("Would you like to create a new list? (y/n)") {
+                println!("What would you like to call this list?");
+                let mut name = String::new();
+                io::stdin()
+                    .read_line(&mut name)
+                    .expect("Could not read input");
+                let name = match name.strip_suffix("\n") {
+                    Some(string) => string.to_owned(),
+                    None => {
+                        eprintln!("No name given aborting!");
+                        std::process::exit(1);
+                    }
+                };
+                super::add::new_list(name.clone());
+                super::switch::switch_list(name).unwrap();
+                get_current_list_id()
+            } else {
+                eprintln!("No current list created (user rejection)");
+                std::process::exit(1);
+            }
+        }
+    }
 }
 
 pub fn user_agreement<S: Display>(phrase: S) -> bool {
