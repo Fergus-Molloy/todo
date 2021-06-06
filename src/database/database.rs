@@ -9,6 +9,7 @@ pub fn db_get() -> PathBuf {
     todo.push(".todo.db");
     if !todo.exists() {
         println!("creating new db at {:?}", todo);
+        println!("run `todo tasks` to see the tutorial",);
         // create db
         std::fs::File::create(&todo).unwrap();
         let create_lists = r"
@@ -45,10 +46,16 @@ pub fn db_get() -> PathBuf {
         con.execute(create_tasks, NO_PARAMS).unwrap();
         con.execute(create_tasks_to_list, NO_PARAMS).unwrap();
         con.execute(
-            "INSERT INTO lists (name, current, MaxNum) VALUES('General', 1, 0)",
+            "INSERT INTO lists (name, current, MaxNum) VALUES('Tutorial', 1, 0)",
             NO_PARAMS,
         )
         .unwrap();
+        // add tutorial tasks
+        super::add::new_task(String::from("Welcome to my todo app!\nYou can veiw your current tasks and lists using `todo tasks` and `todo lists`."), 2, Some(String::from("Tutorial"))).unwrap();
+        super::add::new_task(String::from("Add tasks using the add command `todo add task`.\nTasks can have a low, medium or high priority which can be specified with the `-p` option."), 2, Some(String::from("Tutorial"))).unwrap();
+        super::add::new_task(String::from("Complete tasks by using `todo complete <num>`.\nDon't worry they won't disapprear until you `todo clean` your list!"), 1, Some(String::from("Tutorial"))).unwrap();
+        super::add::new_task(String::from("You can explore the rest of the interface by using the `-h` flag for help with commands."), 0, Some(String::from("Tutorial"))).unwrap();
+        super::add::new_task(String::from("To start using this you can remove this list using `todo remove list Tutorial` and then create a new list using `todo add list <list_name>`."), 0, Some(String::from("Tutorial"))).unwrap();
     }
     assert!(todo.exists() && todo.is_file());
     todo
@@ -112,11 +119,11 @@ pub fn get_current_list_id() -> i32 {
 }
 
 pub fn user_agreement<S: Display>(phrase: S) -> bool {
-    let accept_phrases: [&str; 4] = ["y", "yes", "yeah", "yy"];
     println!("{}", phrase);
     let mut inp = String::new();
     io::stdin()
         .read_line(&mut inp)
         .expect("could not read input");
-    accept_phrases.iter().any(|&x| x == inp)
+    let inp = inp.strip_suffix("\n").unwrap_or("n"); // default to reject if no input given
+    inp == "y"
 }

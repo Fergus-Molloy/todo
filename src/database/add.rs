@@ -2,36 +2,26 @@
 use crate::database::database;
 use rusqlite::Result;
 
-pub fn _new_list(name: String) -> i32 {
+pub fn new_list(name: String) {
     match database::list_exists(&Some(name.clone())) {
-        Ok(id) => {
-            println!("List already exists");
-            id
+        Ok(_) => {
+            eprintln!("List `{}` already exists", name);
+            std::process::exit(1);
         }
-        Err(_) => {
-            if database::user_agreement(format!(
-                "List {} not recoginsed create new list? (y/n)",
-                name
-            )) {
-                match create_list(name) {
-                    Ok(v) => v as i32,
-                    Err(e) => {
-                        eprintln!("Could not create list: {}", e);
-                        std::process::exit(1);
-                    }
-                }
-            } else {
-                eprintln!("User rejection, exiting");
+        Err(_) => match create_list(&name) {
+            Ok(_) => println!("List `{}` sucessfully created", name),
+            Err(e) => {
+                eprintln!("Could not create list `{}`: {}", name, e);
                 std::process::exit(1);
             }
-        }
+        },
     }
 }
 
 /// Add a list with the given name to the database
 ///
 /// Returns a result containing the number of rows affected
-pub fn create_list(name: String) -> Result<usize> {
+pub fn create_list(name: &String) -> Result<usize> {
     let con = database::connect();
     let create = "INSERT INTO lists (name, current, MaxNum) VALUES(?, 0, 0);";
     let mut stmt = con.prepare(create).unwrap();

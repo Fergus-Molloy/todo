@@ -19,16 +19,7 @@ fn main() {
     let opt = Opt::from_args();
     match opt {
         Opt::Add { cmd } => match cmd {
-            Cmd::List { list_name } => match database::add::create_list(list_name.clone()) {
-                Ok(_) => println!("Created list {}", list_name),
-                Err(e) => {
-                    eprintln!(
-                        "Could not create list {}\n An error occurred: {}",
-                        list_name, e
-                    );
-                    std::process::exit(1);
-                }
-            },
+            Cmd::List { list_name } => database::add::new_list(list_name),
             Cmd::Task {
                 priority,
                 list,
@@ -71,21 +62,19 @@ fn main() {
             }
             Err(e) => panic!("could not update {}:\n{}", num, e),
         },
-        Opt::Lists => {
-            println!("Lists:");
-            match database::lists::get_all_list_names() {
-                Err(e) => eprintln!("Could not get lists: {}", e),
-                Ok(list) => {
-                    let lines: Vec<String> = list
-                        .iter()
-                        .map(|item| format!("{}{}", if item.1 { "* " } else { "" }, item.0))
-                        .collect();
-                    for line in lines {
-                        println!("{}", line);
-                    }
+        Opt::Lists => match database::lists::get_all_list_names() {
+            Err(e) => eprintln!("Could not get lists: {}", e),
+            Ok(list) => {
+                let lines: Vec<String> = list
+                    .iter()
+                    .map(|item| format!("{}{}", if item.1 { "* " } else { "" }, item.0))
+                    .collect();
+                println!("Lists:");
+                for line in lines {
+                    println!("{}", line);
                 }
             }
-        }
+        },
         Opt::Tasks { list, order } => {
             let mut tasks = database::tasks::get_tasks(list.clone()).unwrap(); // TODO: handle this error
             let list_id = match database::database::list_exists(&list) {
@@ -137,6 +126,10 @@ fn main() {
             "Updated {} items",
             database::update::update_nums(list).unwrap()
         ),
+        Opt::Test => {
+            let res = database::database::user_agreement("test accept (y/n)");
+            println!("res: {}", res);
+        }
     }
 }
 

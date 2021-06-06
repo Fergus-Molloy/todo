@@ -49,8 +49,8 @@ pub fn remove_list(list_name: String) {
     let con = database::connect();
 
     if database::user_agreement(format!(
-        r"Are you sure you want to delete {}?
-        All associated tasks will also be deleted (y/n)",
+        r"Are you sure you want to delete list `{}`?
+All associated tasks will also be deleted (y/n)",
         list_name
     )) {
         // delete all tasks associated with list
@@ -74,7 +74,7 @@ pub fn remove_list(list_name: String) {
         let del_task_to_list = "DELETE FROM task_to_list WHERE list=?";
         con.execute(del_task_to_list, params![list_id]).unwrap();
 
-        println!("Removed {}", list_name);
+        println!("Removed list `{}`", list_name);
     } else {
         println!("Did not delete list (user aborted)");
     }
